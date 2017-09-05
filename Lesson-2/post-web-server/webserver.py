@@ -1,4 +1,4 @@
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import cgi
 
 
@@ -15,8 +15,8 @@ class webServerHandler(BaseHTTPRequestHandler):
                 output += "<h1>Hello!</h1>"
                 output += '''<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name="message" type="text" ><input type="submit" value="Submit"> </form>'''
                 output += "</body></html>"
-                self.wfile.write(output)
-                print output
+                self.wfile.write(output.encode())
+                print(output)
                 return
 
             if self.path.endswith("/hola"):
@@ -28,8 +28,8 @@ class webServerHandler(BaseHTTPRequestHandler):
                 output += "<h1>&#161 Hola !</h1>"
                 output += '''<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name="message" type="text" ><input type="submit" value="Submit"> </form>'''
                 output += "</body></html>"
-                self.wfile.write(output)
-                print output
+                self.wfile.write(output.encode())
+                print(output)
                 return
 
         except IOError:
@@ -40,19 +40,22 @@ class webServerHandler(BaseHTTPRequestHandler):
             self.send_response(301)
             self.send_header('Content-type', 'text/html')
             self.end_headers()
-            ctype, pdict = cgi.parse_header(
-                self.headers.getheader('content-type'))
+            #self.wfile.write("output".encode())
+            ctype, pdict = cgi.parse_header(self.headers['content-type'])
             if ctype == 'multipart/form-data':
+                self.wfile.write("if".encode())
+                self.wfile.write(pdict['boundary'].encode())
+                pdict['boundary'] = bytes(pdict['boundary'], 'utf-8')
                 fields = cgi.parse_multipart(self.rfile, pdict)
-                messagecontent = fields.get('message')
+                messagecontent = fields.get('message')[0].decode('utf-8')
             output = ""
             output += "<html><body>"
             output += " <h2> Okay, how about this: </h2>"
             output += "<h1> %s </h1>" % messagecontent[0]
             output += '''<form method='POST' enctype='multipart/form-data' action='/hello'><h2>What would you like me to say?</h2><input name="message" type="text" ><input type="submit" value="Submit"> </form>'''
             output += "</body></html>"
-            self.wfile.write(output)
-            print output
+            self.wfile.write(output.encode())
+            print(output)
         except:
             pass
 
@@ -61,10 +64,10 @@ def main():
     try:
         port = 8080
         server = HTTPServer(('', port), webServerHandler)
-        print "Web Server running on port %s" % port
+        print("Web Server running on port %s" % port)
         server.serve_forever()
     except KeyboardInterrupt:
-        print " ^C entered, stopping web server...."
+        print(" ^C entered, stopping web server....")
         server.socket.close()
 
 if __name__ == '__main__':

@@ -1,4 +1,4 @@
-from BaseHTTPServer import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer
 import cgi
 
 # import CRUD Operations from Lesson 1
@@ -29,7 +29,7 @@ class webServerHandler(BaseHTTPRequestHandler):
                 output += "<input name = 'newRestaurantName' type = 'text' placeholder = 'New Restaurant Name' > "
                 output += "<input type='submit' value='Create'>"
                 output += "</form></body></html>"
-                self.wfile.write(output)
+                self.wfile.write(output.encode())
                 return
 
             if self.path.endswith("/restaurants"):
@@ -52,7 +52,7 @@ class webServerHandler(BaseHTTPRequestHandler):
                     output += "</br></br></br>"
 
                 output += "</body></html>"
-                self.wfile.write(output)
+                self.wfile.write(output.encode())
                 return
 
         except IOError:
@@ -62,16 +62,21 @@ class webServerHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         try:
             if self.path.endswith("/restaurants/new"):
-                ctype, pdict = cgi.parse_header(
-                    self.headers.getheader('content-type'))
+                ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
+                print(ctype)
+                print("\n\n")
+                print(pdict)
                 if ctype == 'multipart/form-data':
+                    print(pdict)
+                    self.wfile.write(pdict['boundary'].encode())
+                    pdict['boundary'] = bytes(pdict['boundary'], 'utf-8')
                     fields = cgi.parse_multipart(self.rfile, pdict)
                     messagecontent = fields.get('newRestaurantName')
 
                     # Create new Restaurant Object
                     newRestaurant = Restaurant(name=messagecontent[0])
                     session.add(newRestaurant)
-                    session.commit()
+                    #session.commit()
 
                     self.send_response(301)
                     self.send_header('Content-type', 'text/html')
@@ -85,10 +90,10 @@ class webServerHandler(BaseHTTPRequestHandler):
 def main():
     try:
         server = HTTPServer(('', 8080), webServerHandler)
-        print 'Web server running... Open localhost:8080/restaurants in your browser'
+        print('Web server running... Open localhost:8080/restaurants in your browser')
         server.serve_forever()
     except KeyboardInterrupt:
-        print '^C received, shutting down server'
+        print('^C received, shutting down server')
         server.socket.close()
 
 if __name__ == '__main__':
