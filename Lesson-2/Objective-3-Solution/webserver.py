@@ -60,23 +60,23 @@ class webServerHandler(BaseHTTPRequestHandler):
 
     # Objective 3 Step 3- Make POST method
     def do_POST(self):
+
         try:
             if self.path.endswith("/restaurants/new"):
-                ctype, pdict = cgi.parse_header(self.headers.getheader('content-type'))
-                print(ctype)
-                print("\n\n")
-                print(pdict)
+                ctype, pdict = cgi.parse_header(self.headers['content-type'])
+                pdict['boundary'] = bytes(pdict['boundary'], "utf-8")
                 if ctype == 'multipart/form-data':
-                    print(pdict)
-                    self.wfile.write(pdict['boundary'].encode())
-                    pdict['boundary'] = bytes(pdict['boundary'], 'utf-8')
                     fields = cgi.parse_multipart(self.rfile, pdict)
-                    messagecontent = fields.get('newRestaurantName')
+                    print("Fields value is", fields)
+                    restaurant_name = fields.get('newRestaurantName') # in bytes
+                    print("Restaurant name is ", restaurant_name)
+                    restaurant_name = restaurant_name[0].decode("utf-8") # in string
+                    print("Restaurant name is ", restaurant_name)
 
                     # Create new Restaurant Object
-                    newRestaurant = Restaurant(name=messagecontent[0])
+                    newRestaurant = Restaurant(name=restaurant_name)
                     session.add(newRestaurant)
-                    #session.commit()
+                    session.commit()
 
                     self.send_response(301)
                     self.send_header('Content-type', 'text/html')
@@ -84,7 +84,7 @@ class webServerHandler(BaseHTTPRequestHandler):
                     self.end_headers()
 
         except:
-            pass
+            print("Inside the exception block")
 
 
 def main():
